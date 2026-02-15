@@ -6,7 +6,7 @@ import {
 } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import { HudOverlay } from "@/components/hud-overlay";
-import Navbar from "@/components/navbar";
+import { Navbar } from "@/components/navbar";
 import { DitherOverlay } from "@/components/shaders/dither-overlay";
 import { NoiseOverlay } from "@/components/shaders/noise-overlay";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -16,8 +16,8 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import appCss from "../styles.css?url";
 
 /**
- * Router Context - digunakan untuk dependency injection
- * Tambahkan property di sini jika butuh share instance (queryClient, auth, dll)
+ * Router context for dependency injection.
+ * Add properties here when you need to share instances (queryClient, auth, etc.)
  */
 type RouterContext = object;
 
