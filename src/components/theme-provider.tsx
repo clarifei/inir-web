@@ -69,19 +69,13 @@ export function ThemeProvider({
     setThemeState(newTheme);
   };
 
-  if (!mounted) {
-    return (
-      <ThemeProviderContext.Provider
-        {...props}
-        value={{ theme: defaultTheme, setTheme }}
-      >
-        {children}
-      </ThemeProviderContext.Provider>
-    );
-  }
+  // Single return with conditional value
+  const contextValue = mounted
+    ? { theme, setTheme }
+    : { theme: defaultTheme, setTheme };
 
   return (
-    <ThemeProviderContext.Provider {...props} value={{ theme, setTheme }}>
+    <ThemeProviderContext.Provider {...props} value={contextValue}>
       {children}
     </ThemeProviderContext.Provider>
   );
