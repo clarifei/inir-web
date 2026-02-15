@@ -1,11 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { HeroSection } from "@/components/pages/1-hero-section";
+import { FeaturesSection } from "@/components/pages/2-features-section";
 
-export const Route = createFileRoute("/")({ component: App });
+export const Route = createFileRoute("/")({
+  component: Home,
+});
 
-function App() {
+function Home() {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center">
-      <div className="font-medium">Hello World</div>
-    </div>
+    <main>
+      <HeroSection />
+      <FeaturesSection />
+    </main>
   );
 }
