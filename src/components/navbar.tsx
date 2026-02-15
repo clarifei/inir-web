@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import * as React from "react";
 import { DiscordPixel } from "@/components/icons/discord";
 import { GeminiFillPixel } from "@/components/icons/gemini";
 import { GithubPixel } from "@/components/icons/github";
@@ -13,15 +13,15 @@ const links = [
   { label: "Docs", href: "#docs" },
 ];
 
-const Navbar = () => {
-  const [mounted, setMounted] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
+export function Navbar() {
+  const [mounted, setMounted] = React.useState(false);
+  const [scrolled, setScrolled] = React.useState(false);
 
-  useEffect(() => {
+  React.useEffect(() => {
     setMounted(true);
   }, []);
 
-  useEffect(() => {
+  React.useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 60);
     window.addEventListener("scroll", onScroll);
     return () => window.removeEventListener("scroll", onScroll);
@@ -95,6 +95,4 @@ const Navbar = () => {
       </div>
     </header>
   );
-};
-
-export default Navbar;
+}
