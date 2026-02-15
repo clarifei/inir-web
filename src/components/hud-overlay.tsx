@@ -75,6 +75,15 @@ function CornerRight() {
   return <Grid cells={useAnimatedTriangle(RIGHT_CHARS)} />;
 }
 
+// Shared label component to avoid repetition
+function LabelText({ children }: { children: string }) {
+  return (
+    <span className="text-[9px] text-foreground/50 leading-none">
+      {children}
+    </span>
+  );
+}
+
 function getBrowserName(): string {
   if (typeof navigator === "undefined") {
     return "Unknown";
@@ -101,9 +110,7 @@ function DitherToggle() {
       onClick={toggle}
       type="button"
     >
-      <span className="text-[9px] text-foreground/50 leading-none">
-        DITHER:
-      </span>
+      <LabelText>DITHER:</LabelText>
       <span
         className={`text-[9px] leading-none ${enabled ? "text-green-400" : "text-destructive"}`}
       >
@@ -162,9 +169,7 @@ function InfoRow({
     <div
       className={`flex items-center space-x-1 ${align === "right" ? "justify-end" : ""}`}
     >
-      <span className="text-[9px] text-foreground/50 leading-none">
-        {label}
-      </span>
+      <LabelText>{label}</LabelText>
       <span
         className={`text-[10px] text-foreground/70 leading-none ${numeric ? "tabular-nums" : ""}`}
       >
@@ -212,9 +217,7 @@ function TimeSync() {
         <div className="flex items-center justify-end space-x-3">
           <InfoRow align="right" label="ZONE:" value={getTimezoneOffset()} />
           <div className="flex items-center space-x-1">
-            <span className="text-[9px] text-foreground/50 leading-none">
-              STATUS:
-            </span>
+            <LabelText>STATUS:</LabelText>
             <div className="h-1 w-1 rounded-full bg-green-400" />
             <span className="text-[9px] text-foreground/70 leading-none">
               ON

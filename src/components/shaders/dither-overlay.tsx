@@ -142,6 +142,105 @@ void main() {
 }
 `;
 
+// WebGL initialization helpers
+function createShader(
+  gl: WebGLRenderingContext,
+  type: number,
+  source: string
+): WebGLShader | null {
+  const shader = gl.createShader(type);
+  if (!shader) {
+    return null;
+  }
+
+  gl.shaderSource(shader, source);
+  gl.compileShader(shader);
+
+  if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+    console.error("Shader compile error:", gl.getShaderInfoLog(shader));
+    gl.deleteShader(shader);
+    return null;
+  }
+
+  return shader;
+}
+
+function createProgram(
+  gl: WebGLRenderingContext,
+  vertexShader: WebGLShader,
+  fragmentShader: WebGLShader
+): WebGLProgram | null {
+  const program = gl.createProgram();
+  if (!program) {
+    return null;
+  }
+
+  gl.attachShader(program, vertexShader);
+  gl.attachShader(program, fragmentShader);
+  gl.linkProgram(program);
+
+  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+    console.error("Program link error:", gl.getProgramInfoLog(program));
+    gl.deleteProgram(program);
+    return null;
+  }
+
+  return program;
+}
+
+function setupGeometry(gl: WebGLRenderingContext, program: WebGLProgram) {
+  const buffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+  gl.bufferData(
+    gl.ARRAY_BUFFER,
+    new Float32Array([-1, -1, 1, -1, -1, 1, -1, 1, 1, -1, 1, 1]),
+    gl.STATIC_DRAW
+  );
+
+  const positionLoc = gl.getAttribLocation(program, "position");
+  gl.enableVertexAttribArray(positionLoc);
+  gl.vertexAttribPointer(positionLoc, 2, gl.FLOAT, false, 0, 0);
+}
+
+function getUniforms(gl: WebGLRenderingContext, program: WebGLProgram) {
+  return {
+    uMouse: gl.getUniformLocation(program, "uMouse"),
+    uPixelSize: gl.getUniformLocation(program, "uPixelSize"),
+    uRevealRadius: gl.getUniformLocation(program, "uRevealRadius"),
+    uFalloff: gl.getUniformLocation(program, "uFalloff"),
+    uColor: gl.getUniformLocation(program, "uColor"),
+  };
+}
+
+function setUniforms(
+  gl: WebGLRenderingContext,
+  uniforms: ReturnType<typeof getUniforms>
+) {
+  gl.uniform1f(uniforms.uPixelSize, CONFIG.pixelSize);
+  gl.uniform1f(uniforms.uRevealRadius, CONFIG.revealRadius);
+  gl.uniform1f(uniforms.uFalloff, CONFIG.falloff);
+  gl.uniform4f(
+    uniforms.uColor,
+    CONFIG.color.r / 255,
+    CONFIG.color.g / 255,
+    CONFIG.color.b / 255,
+    CONFIG.color.a / 255
+  );
+}
+
+function resizeCanvas(
+  canvas: HTMLCanvasElement,
+  gl: WebGLRenderingContext
+): number {
+  const dpr = Math.min(window.devicePixelRatio || 1, 1);
+  canvas.width = Math.floor(window.innerWidth * dpr);
+  canvas.height = Math.floor(window.innerHeight * dpr);
+  canvas.style.width = `${window.innerWidth}px`;
+  canvas.style.height = `${window.innerHeight}px`;
+  gl.viewport(0, 0, canvas.width, canvas.height);
+  return dpr;
+}
+
 export function DitherOverlay({
   className,
   enabled = true,
@@ -162,14 +261,10 @@ export function DitherOverlay({
       return;
     }
 
-    mouseRef.current = {
-      x: window.innerWidth / 2,
-      y: window.innerHeight / 2,
-    };
-    smoothMouseRef.current = {
-      x: window.innerWidth / 2,
-      y: window.innerHeight / 2,
-    };
+    const centerX = window.innerWidth / 2;
+    const centerY = window.innerHeight / 2;
+    mouseRef.current = { x: centerX, y: centerY };
+    smoothMouseRef.current = { x: centerX, y: centerY };
 
     const gl = canvas.getContext("webgl", {
       alpha: true,
@@ -181,86 +276,35 @@ export function DitherOverlay({
       return;
     }
 
-    const vs = gl.createShader(gl.VERTEX_SHADER);
-    const fs = gl.createShader(gl.FRAGMENT_SHADER);
+    const vs = createShader(gl, gl.VERTEX_SHADER, VERTEX_SHADER);
+    const fs = createShader(gl, gl.FRAGMENT_SHADER, FRAGMENT_SHADER);
     if (!(vs && fs)) {
       return;
     }
 
-    gl.shaderSource(vs, VERTEX_SHADER);
-    gl.shaderSource(fs, FRAGMENT_SHADER);
-    gl.compileShader(vs);
-    gl.compileShader(fs);
-
-    if (!gl.getShaderParameter(vs, gl.COMPILE_STATUS)) {
-      console.error("Vertex shader error:", gl.getShaderInfoLog(vs));
-    }
-    if (!gl.getShaderParameter(fs, gl.COMPILE_STATUS)) {
-      console.error("Fragment shader error:", gl.getShaderInfoLog(fs));
-      return;
-    }
-
-    const program = gl.createProgram();
+    const program = createProgram(gl, vs, fs);
     if (!program) {
-      return;
-    }
-
-    gl.attachShader(program, vs);
-    gl.attachShader(program, fs);
-    gl.linkProgram(program);
-
-    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-      console.error("Program link error:", gl.getProgramInfoLog(program));
       return;
     }
 
     // biome-ignore lint/correctness/useHookAtTopLevel: WebGL method, not React hook
     gl.useProgram(program);
+    setupGeometry(gl, program);
 
-    const buffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-    gl.bufferData(
-      gl.ARRAY_BUFFER,
-      new Float32Array([-1, -1, 1, -1, -1, 1, -1, 1, 1, -1, 1, 1]),
-      gl.STATIC_DRAW
-    );
-
-    const positionLoc = gl.getAttribLocation(program, "position");
-    gl.enableVertexAttribArray(positionLoc);
-    gl.vertexAttribPointer(positionLoc, 2, gl.FLOAT, false, 0, 0);
-
-    const uMouse = gl.getUniformLocation(program, "uMouse");
-    const uPixelSize = gl.getUniformLocation(program, "uPixelSize");
-    const uRevealRadius = gl.getUniformLocation(program, "uRevealRadius");
-    const uFalloff = gl.getUniformLocation(program, "uFalloff");
-    const uColor = gl.getUniformLocation(program, "uColor");
-
-    gl.uniform1f(uPixelSize, CONFIG.pixelSize);
-    gl.uniform1f(uRevealRadius, CONFIG.revealRadius);
-    gl.uniform1f(uFalloff, CONFIG.falloff);
-    gl.uniform4f(
-      uColor,
-      CONFIG.color.r / 255,
-      CONFIG.color.g / 255,
-      CONFIG.color.b / 255,
-      CONFIG.color.a / 255
-    );
+    const uniforms = getUniforms(gl, program);
+    setUniforms(gl, uniforms);
 
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
-    const resize = () => {
-      const dpr = Math.min(window.devicePixelRatio || 1, 1);
-      canvas.width = Math.floor(window.innerWidth * dpr);
-      canvas.height = Math.floor(window.innerHeight * dpr);
-      canvas.style.width = `${window.innerWidth}px`;
-      canvas.style.height = `${window.innerHeight}px`;
-      gl.viewport(0, 0, canvas.width, canvas.height);
+    let dpr = resizeCanvas(canvas, gl);
+
+    const handleResize = () => {
+      dpr = resizeCanvas(canvas, gl);
     };
 
     window.addEventListener("mousemove", handleMouseMove);
-    window.addEventListener("resize", resize);
-    resize();
+    window.addEventListener("resize", handleResize);
 
     const render = () => {
       smoothMouseRef.current.x +=
@@ -268,9 +312,8 @@ export function DitherOverlay({
       smoothMouseRef.current.y +=
         (mouseRef.current.y - smoothMouseRef.current.y) * CONFIG.smoothSpeed;
 
-      const dpr = Math.min(window.devicePixelRatio || 1, 1);
       gl.uniform2f(
-        uMouse,
+        uniforms.uMouse,
         smoothMouseRef.current.x * dpr,
         canvas.height - smoothMouseRef.current.y * dpr
       );
@@ -287,7 +330,7 @@ export function DitherOverlay({
     return () => {
       cancelAnimationFrame(rafRef.current);
       window.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("resize", resize);
+      window.removeEventListener("resize", handleResize);
     };
   }, [handleMouseMove]);
 

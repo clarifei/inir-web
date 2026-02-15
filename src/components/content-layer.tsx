@@ -1,35 +1,49 @@
 import type * as React from "react";
 import { cn } from "@/lib/utils";
-import { Z_LAYERS } from "@/lib/z-layers";
+import { Z_LAYERS, type ZLayer } from "@/lib/z-layers";
 
-interface ContentLayerProps {
+interface LayerProps {
   children: React.ReactNode;
   className?: string;
+  layer: ZLayer;
 }
 
-// Background stuff - gradients, particles, etc. (z-0)
-export function BackgroundLayer({ children, className }: ContentLayerProps) {
+/**
+ * Unified layer component for z-index management
+ * @param layer - The layer type: 'BACKGROUND' | 'MEDIA' | 'CONTENT' | 'DITHER' | 'HUD' | 'NOISE'
+ */
+export function Layer({ children, className, layer }: LayerProps) {
   return (
-    <div className={cn(className)} style={{ zIndex: Z_LAYERS.BACKGROUND }}>
+    <div className={cn(className)} style={{ zIndex: Z_LAYERS[layer] }}>
       {children}
     </div>
   );
 }
 
-// Images and videos - dither goes on top of these (z-10)
-export function MediaContainer({ children, className }: ContentLayerProps) {
-  return (
-    <div className={cn(className)} style={{ zIndex: Z_LAYERS.MEDIA }}>
-      {children}
-    </div>
-  );
-}
+// Convenience exports for backward compatibility
+export const BackgroundLayer = ({
+  children,
+  className,
+}: Omit<LayerProps, "layer">) => (
+  <Layer className={className} layer="BACKGROUND">
+    {children}
+  </Layer>
+);
 
-// Text, buttons, UI - sits above the dither effect (z-30)
-export function ContentLayer({ children, className }: ContentLayerProps) {
-  return (
-    <div className={cn(className)} style={{ zIndex: Z_LAYERS.CONTENT }}>
-      {children}
-    </div>
-  );
-}
+export const MediaContainer = ({
+  children,
+  className,
+}: Omit<LayerProps, "layer">) => (
+  <Layer className={className} layer="MEDIA">
+    {children}
+  </Layer>
+);
+
+export const ContentLayer = ({
+  children,
+  className,
+}: Omit<LayerProps, "layer">) => (
+  <Layer className={className} layer="CONTENT">
+    {children}
+  </Layer>
+);

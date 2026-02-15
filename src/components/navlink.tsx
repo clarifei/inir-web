@@ -20,9 +20,7 @@ function NavLink({
 }: NavLinkProps) {
   return (
     <Link
-      activeOptions={{
-        exact,
-      }}
+      activeOptions={{ exact }}
       activeProps={{
         className: cn(className, activeClassName),
         "aria-current": "page",
@@ -33,11 +31,7 @@ function NavLink({
       }}
       to={to}
     >
-      {({ isActive }) => (
-        <span className={isActive ? activeClassName : inactiveClassName}>
-          {children}
-        </span>
-      )}
+      {children}
     </Link>
   );
 }
